@@ -1,0 +1,14 @@
+# FEC IoT Project — Python dependencies
+# Install with: pip install -r requirements.txt
+
+# MQTT client (sensor layer + fog node)
+paho-mqtt==2.1.0
+
+# AWS SDK (fog node + Lambda functions + infra scripts)
+boto3==1.35.0
+botocore==1.35.0
+
+# Testing
+pytest==8.3.2
+pytest-cov==5.0.0
+moto[sqs,dynamodb,cloudwatch,lambda,iam,apigateway]==5.0.14

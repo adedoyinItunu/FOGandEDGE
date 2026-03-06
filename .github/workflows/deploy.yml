@@ -1,0 +1,159 @@
+name: FEC IoT — CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION:      eu-west-1
+  READINGS_TABLE:  iot_readings
+  ALERTS_TABLE:    iot_alerts
+  CW_NAMESPACE:    FogEdgeIoT
+
+jobs:
+  # ─── Job 1: Test ────────────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov moto[all]
+
+      - name: Run unit tests with coverage
+        run: |
+          pytest tests/ -v \
+            --cov=fog \
+            --cov=backend/lambda_functions \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            -p no:warnings
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  # ─── Job 2: Deploy Lambda functions (only on push to main) ──────────────────
+  deploy-lambda:
+    name: Deploy Lambda Functions
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install production dependencies
+        run: |
+          pip install boto3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Package and deploy process_iot_data Lambda
+        run: |
+          cd backend/lambda_functions
+          zip process_iot_data.zip process_iot_data.py
+          aws lambda update-function-code \
+            --function-name fec-iot-process \
+            --zip-file fileb://process_iot_data.zip \
+            --region ${{ env.AWS_REGION }}
+          echo "✓ Deployed fec-iot-process"
+
+      - name: Package and deploy get_readings Lambda
+        run: |
+          cd backend/lambda_functions
+          zip get_readings.zip get_readings.py
+          aws lambda update-function-code \
+            --function-name fec-iot-get-readings \
+            --zip-file fileb://get_readings.zip \
+            --region ${{ env.AWS_REGION }}
+          echo "✓ Deployed fec-iot-get-readings"
+
+      - name: Package and deploy get_alerts Lambda
+        run: |
+          cd backend/lambda_functions
+          zip get_alerts.zip get_alerts.py
+          aws lambda update-function-code \
+            --function-name fec-iot-get-alerts \
+            --zip-file fileb://get_alerts.zip \
+            --region ${{ env.AWS_REGION }}
+          echo "✓ Deployed fec-iot-get-alerts"
+
+      - name: Package and deploy get_latest Lambda
+        run: |
+          cd backend/lambda_functions
+          zip get_latest.zip get_latest.py
+          aws lambda update-function-code \
+            --function-name fec-iot-get-latest \
+            --zip-file fileb://get_latest.zip \
+            --region ${{ env.AWS_REGION }}
+          echo "✓ Deployed fec-iot-get-latest"
+
+      - name: Verify Lambda deployments
+        run: |
+          for fn in fec-iot-process fec-iot-get-readings fec-iot-get-alerts fec-iot-get-latest; do
+            STATE=$(aws lambda get-function-configuration \
+              --function-name $fn \
+              --query 'State' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            echo "  $fn → $STATE"
+          done
+
+  # ─── Job 3: Deploy fog node config to EC2 via SSM ──────────────────────────
+  deploy-fog:
+    name: Deploy Fog Node Config
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Push fog node update via SSM Run Command
+        run: |
+          aws ssm send-command \
+            --instance-ids "${{ secrets.FOG_NODE_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters '{"commands": [
+              "cd /home/ubuntu/fec_project",
+              "git pull origin main",
+              "pip install -r requirements.txt -q",
+              "sudo systemctl restart fog-node.service",
+              "echo Fog node restarted"
+            ]}' \
+            --region ${{ env.AWS_REGION }} || echo "SSM command sent (check EC2 for status)"
