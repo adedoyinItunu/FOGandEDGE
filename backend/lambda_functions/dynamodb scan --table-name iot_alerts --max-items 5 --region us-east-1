@@ -1,0 +1,213 @@
+{
+    "Items": [
+        {
+            "unit": {
+                "S": "ppm"
+            },
+            "sensor_id": {
+                "S": "co2_01"
+            },
+            "max_value": {
+                "N": "445.81"
+            },
+            "mean": {
+                "N": "420.058"
+            },
+            "ingested_at": {
+                "S": "2026-04-10T11:21:36.799637+00:00"
+            },
+            "timestamp": {
+                "S": "2026-04-10T11:06:31.260766+00:00"
+            },
+            "std_dev": {
+                "N": "12.652"
+            },
+            "anomaly_count": {
+                "N": "1"
+            },
+            "latest_value": {
+                "N": "431.363"
+            },
+            "sensor_type": {
+                "S": "co2"
+            },
+            "min_value": {
+                "N": "401.385"
+            },
+            "sample_count": {
+                "N": "10"
+            },
+            "fog_node_id": {
+                "S": "fog_node_01"
+            }
+        },
+        {
+            "unit": {
+                "S": "ppm"
+            },
+            "sensor_id": {
+                "S": "co2_01"
+            },
+            "max_value": {
+                "N": "750.063"
+            },
+            "mean": {
+                "N": "435.578"
+            },
+            "ingested_at": {
+                "S": "2026-04-10T11:21:37.339128+00:00"
+            },
+            "timestamp": {
+                "S": "2026-04-10T11:07:01.437525+00:00"
+            },
+            "std_dev": {
+                "N": "74.705"
+            },
+            "anomaly_count": {
+                "N": "1"
+            },
+            "latest_value": {
+                "N": "750.063"
+            },
+            "sensor_type": {
+                "S": "co2"
+            },
+            "min_value": {
+                "N": "401.385"
+            },
+            "sample_count": {
+                "N": "20"
+            },
+            "fog_node_id": {
+                "S": "fog_node_01"
+            }
+        },
+        {
+            "unit": {
+                "S": "ppm"
+            },
+            "sensor_id": {
+                "S": "co2_01"
+            },
+            "max_value": {
+                "N": "750.063"
+            },
+            "mean": {
+                "N": "494.913"
+            },
+            "ingested_at": {
+                "S": "2026-04-10T11:21:36.749211+00:00"
+            },
+            "timestamp": {
+                "S": "2026-04-10T11:07:31.478833+00:00"
+            },
+            "std_dev": {
+                "N": "120.551"
+            },
+            "anomaly_count": {
+                "N": "2"
+            },
+            "latest_value": {
+                "N": "394.954"
+            },
+            "sensor_type": {
+                "S": "co2"
+            },
+            "min_value": {
+                "N": "384.521"
+            },
+            "sample_count": {
+                "N": "20"
+            },
+            "fog_node_id": {
+                "S": "fog_node_01"
+            }
+        },
+        {
+            "unit": {
+                "S": "ppm"
+            },
+            "sensor_id": {
+                "S": "co2_01"
+            },
+            "max_value": {
+                "N": "744.679"
+            },
+            "mean": {
+                "N": "479.712"
+            },
+            "ingested_at": {
+                "S": "2026-04-10T11:21:39.090432+00:00"
+            },
+            "timestamp": {
+                "S": "2026-04-10T11:08:01.536803+00:00"
+            },
+            "std_dev": {
+                "N": "104.918"
+            },
+            "anomaly_count": {
+                "N": "2"
+            },
+            "latest_value": {
+                "N": "444.43"
+            },
+            "sensor_type": {
+                "S": "co2"
+            },
+            "min_value": {
+                "N": "384.521"
+            },
+            "sample_count": {
+                "N": "20"
+            },
+            "fog_node_id": {
+                "S": "fog_node_01"
+            }
+        },
+        {
+            "unit": {
+                "S": "ppm"
+            },
+            "sensor_id": {
+                "S": "co2_01"
+            },
+            "max_value": {
+                "N": "761.683"
+            },
+            "mean": {
+                "N": "488.363"
+            },
+            "ingested_at": {
+                "S": "2026-04-10T11:21:36.731060+00:00"
+            },
+            "timestamp": {
+                "S": "2026-04-10T11:08:31.579988+00:00"
+            },
+            "std_dev": {
+                "N": "117.514"
+            },
+            "anomaly_count": {
+                "N": "2"
+            },
+            "latest_value": {
+                "N": "595.302"
+            },
+            "sensor_type": {
+                "S": "co2"
+            },
+            "min_value": {
+                "N": "397.923"
+            },
+            "sample_count": {
+                "N": "20"
+            },
+            "fog_node_id": {
+                "S": "fog_node_01"
+            }
+        }
+    ],
+    "Count": 165,
+    "ScannedCount": 165,
+    "ConsumedCapacity": null,
+    "NextToken": "eyJFeGNsdXNpdmVTdGFydEtleSI6IG51bGwsICJib3RvX3RydW5jYXRlX2Ftb3VudCI6IDV9"
+}
