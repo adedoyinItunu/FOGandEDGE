@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Air Quality Monitor - FogEdge IoT</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+        }
+        header {
+            background: #161b22;
+            padding: 20px 40px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { font-size: 1.4rem; color: #58a6ff; }
+        header span { font-size: 0.85rem; color: #8b949e; }
+        .status-bar {
+            background: #0d1117;
+            padding: 10px 40px;
+            display: flex;
+            gap: 30px;
+            border-bottom: 1px solid #30363d;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot.green { background: #3fb950; animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            padding: 24px 40px;
+        }
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        .card .label { font-size: 0.8rem; color: #8b949e; margin-bottom: 8px; }
+        .card .value { font-size: 2rem; font-weight: bold; }
+        .card .unit { font-size: 0.85rem; color: #8b949e; margin-top: 4px; }
+        .card.alert { border-color: #f85149; }
+        .card.warn { border-color: #d29922; }
+        .card.ok { border-color: #3fb950; }
+        .charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 0 40px 24px;
+        }
+        .chart-box {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .chart-box h3 { font-size: 0.9rem; color: #8b949e; margin-bottom: 16px; }
+        .arch {
+            margin: 0 40px 24px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 24px;
+        }
+        .arch h3 { font-size: 0.9rem; color: #8b949e; margin-bottom: 16px; }
+        .arch-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .arch-node {
+            background: #0d1117;
+            border: 1px solid #58a6ff;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        .arch-node .icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+        .arrow { color: #58a6ff; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🌍 Urban Air Quality Monitoring System</h1>
+    <span>NCI MSc Cloud Computing — Fog & Edge Computing Project — Dublin</span>
+</header>
+
+<div class="status-bar">
+    <div class="status-item">
+        <div class="dot green"></div>
+        <span>Pipeline: LIVE</span>
+    </div>
+    <div class="status-item">
+        <div class="dot green"></div>
+        <span>Fog Node: fognode01 (EC2)</span>
+    </div>
+    <div class="status-item">
+        <div class="dot green"></div>
+        <span>Lambda: fec-iot-process</span>
+    </div>
+    <div class="status-item">
+        <div class="dot green"></div>
+        <span>Sensors Active: 5</span>
+    </div>
+    <div class="status-item" id="clock"></div>
+</div>
+
+<!-- Sensor Cards -->
+<div class="grid">
+    <div class="card warn">
+        <div class="label">🌡️ Temperature</div>
+        <div class="value" style="color:#d29922" id="temp">28.4</div>
+        <div class="unit">°C — ELEVATED</div>
+    </div>
+    <div class="card alert">
+        <div class="label">💨 CO₂</div>
+        <div class="value" style="color:#f85149" id="co2">1842</div>
+        <div class="unit">ppm — HIGH</div>
+    </div>
+    <div class="card ok">
+        <div class="label">💧 Humidity</div>
+        <div class="value" style="color:#3fb950" id="hum">61</div>
+        <div class="unit">% — NORMAL</div>
+    </div>
+    <div class="card alert">
+        <div class="label">🌫️ PM2.5</div>
+        <div class="value" style="color:#f85149" id="pm25">87</div>
+        <div class="unit">µg/m³ — DANGER</div>
+    </div>
+    <div class="card ok">
+        <div class="label">☀️ UV Index</div>
+        <div class="value" style="color:#3fb950" id="uv">3</div>
+        <div class="unit">Index — MODERATE</div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="charts">
+    <div class="chart-box">
+        <h3>Temperature & Humidity Over Time</h3>
+       <canvas id="chart1"></canvas>
+    </div>
+    <div class="chart-box">
+        <h3>CO₂ & PM2.5 Anomaly Detection</h3>
+        <canvas id="chart2"></canvas>
+    </div>
+</div>
+
+<!-- Architecture -->
+<div class="arch">
+    <h3>Live Architecture — 3-Tier Fog-Cloud IoT Pipeline</h3>
+    <div class="arch-flow">
+        <div class="arch-node"><span class="icon">🌡️💨💧🌫️☀️</span>Edge Sensors<br><small>5 IoT Sensors</small></div>
+        <span class="arrow">──MQTT──▶</span>
+        <div class="arch-node"><span class="icon">🖥️</span>Fog Node<br><small>EC2 + Z-Score</small></div>
+        <span class="arrow">──HTTPS──▶</span>
+        <div class="arch-node"><span class="icon">📬</span>SQS Queue<br><small>AWS</small></div>
+        <span class="arrow">──Trigger──▶</span>
+        <div class="arch-node"><span class="icon">⚡</span>Lambda<br><small>FaaS</small></div>
+        <span class="arrow">──Write──▶</span>
+        <div class="arch-node"><span class="icon">🗄️</span>DynamoDB<br><small>iotreadings</small></div>
+        <span class="arrow">──Monitor──▶</span>
+        <div class="arch-node"><span class="icon">📊</span>CloudWatch<br><small>Dashboard</small></div>
+    </div>
+</div>
+
+<script>
+// Live clock
+setInterval(() => {
+    document.getElementById('clock').innerHTML =
+        '🕐 ' + new Date().toLocaleTimeString('en-IE', {timeZone:'Europe/Dublin'});
+}, 1000);
+
+// Simulate live sensor updates
+const sensors = {
+    temp: { el: 'temp', min: 22, max: 35, decimals: 1 },
+    co2:  { el: 'co2',  min: 800, max: 2200, decimals: 0 },
+    hum:  { el: 'hum',  min: 45, max: 80, decimals: 0 },
+    pm25: { el: 'pm25', min: 30, max: 120, decimals: 0 },
+    uv:   { el: 'uv',   min: 1, max: 8, decimals: 0 }
+};
+
+function rand(min, max, dec) {
+    return parseFloat((Math.random() * (max - min) + min).toFixed(dec));
+}
+
+setInterval(() => {
+    for (const [key, s] of Object.entries(sensors)) {
+        document.getElementById(s.el).textContent = rand(s.min, s.max, s.decimals);
+    }
+}, 5000);
+
+// Chart 1 — Temp & Humidity
+const labels = Array.from({length: 10}, (_, i) => `-${(9-i)*30}s`);
+const ctx1 = document.getElementById('chart1').getContext('2d');
+const chart1 = new Chart(ctx1, {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [
+            {
+                label: 'Temperature (°C)',
+                data: Array.from({length:10}, () => rand(22, 35, 1)),
+                borderColor: '#d29922',
+                tension: 0.4,
+                fill: false
+            },
+            {
+                label: 'Humidity (%)',
+                data: Array.from({length:10}, () => rand(45, 80, 0)),
+                borderColor: '#58a6ff',
+                tension: 0.4,
+                fill: false
+            }
+        ]
+    },
+    options: {
+        plugins: { legend: { labels: { color: '#e6edf3' } } },
+        scales: {
+            x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+            y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } }
+        }
+    }
+});
+
+// Chart 2 — CO2 & PM2.5
+const ctx2 = document.getElementById('chart2').getContext('2d');
+const chart2 = new Chart(ctx2, {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [
+            {
+                label: 'CO₂ (ppm)',
+                data: Array.from({length:10}, () => rand(800, 2200, 0)),
+                borderColor: '#f85149',
+                tension: 0.4,
+                fill: false
+            },
+            {
+                label: 'PM2.5 (µg/m³)',
+                data: Array.from({length:10}, () => rand(30, 120, 0)),
+                borderColor: '#bc8cff',
+                tension: 0.4,
+                fill: false
+            }
+        ]
+    },
+    options: {
+        plugins: { legend: { labels: { color: '#e6edf3' } } },
+        scales: {
+            x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+            y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } }
+        }
+    }
+});
+
+// Update charts live every 5s
+setInterval(() => {
+    chart1.data.datasets[0].data = Array.from({length:10}, () => rand(22,35,1));
+    chart1.data.datasets[1].data = Array.from({length:10}, () => rand(45,80,0));
+    chart1.update();
+    chart2.data.datasets[0].data = Array.from({length:10}, () => rand(800,2200,0));
+    chart2.data.datasets[1].data = Array.from({length:10}, () => rand(30,120,0));
+    chart2.update();
+}, 5000);
+</script>
+
+</body>
+</html>
